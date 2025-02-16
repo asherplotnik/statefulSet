@@ -1,0 +1,18 @@
+replicaCount: 3
+image: mongo:5.0
+port: 27017
+
+auth:
+  rootUser: root
+  rootPassword: password123
+  keyfile: |-
+    # Generate with: openssl rand -base64 756 | base64 -w 0
+    # Paste output here
+
+persistence:
+  storageClass: ocs-storagecluster-cephfs
+  size: 1Gi
+
+service:
+  name: mongodb
+  type: ClusterIP
