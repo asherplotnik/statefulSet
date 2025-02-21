@@ -67,6 +67,11 @@ spec:
                   - "sh"
                   - "-c"
                   - |
+                    mongo --host localhost admin --eval "db.createUser({
+                      user: '$MONGO_INITDB_ROOT_USERNAME',
+                      pwd: '$MONGO_INITDB_ROOT_PASSWORD',
+                      roles: [ { role: 'root', db: 'admin' } ]
+                    })" || true
                     echo "Running replica set initialization on primary pod ($HOSTNAME)..."
                     for i in $(seq 1 30); do
                       if mongo --host localhost --eval "db.adminCommand('ping')" --quiet; then
@@ -81,9 +86,9 @@ spec:
                       rs.initiate({
                         _id: 'rs0',
                         members: [
-                          { _id: 0, host: '{{ include \"mongodb-replicaset.fullname\" . }}-0.{{ include \"mongodb-replicaset.fullname\" . }}:27017' },
-                          { _id: 1, host: '{{ include \"mongodb-replicaset.fullname\" . }}-1.{{ include \"mongodb-replicaset.fullname\" . }}:27017' },
-                          { _id: 2, host: '{{ include \"mongodb-replicaset.fullname\" . }}-2.{{ include \"mongodb-replicaset.fullname\" . }}:27017' }
+                          { _id: 0, host: 'mongodb-replicaset-0.mongodb-replicaset:27017' },
+                          { _id: 1, host: 'mongodb-replicaset-1.mongodb-replicaset:27017' },
+                          { _id: 2, host: 'mongodb-replicaset-2.mongodb-replicaset:27017' }
                         ]
                       })
                     " || true
@@ -97,11 +102,6 @@ spec:
                       sleep 2
                     done
                     echo "Creating root user..."
-                    mongo --host localhost admin --eval "db.createUser({
-                      user: '$MONGO_INITDB_ROOT_USERNAME',
-                      pwd: '$MONGO_INITDB_ROOT_PASSWORD',
-                      roles: [ { role: 'root', db: 'admin' } ]
-                    })" || true
       volumes:
         - name: keyfile-secret
           secret:
