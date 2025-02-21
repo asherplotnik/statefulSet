@@ -39,9 +39,21 @@ spec:
             - "--bind_ip_all"
             - "--keyFile"
             - "/etc/mongodb/keyfile"
+            - "--auth"
           ports:
             - containerPort: 27017
               name: mongo
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-admin-secret
+                  key: username
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-admin-secret
+                  key: password
           volumeMounts:
             - name: datadir
               mountPath: /data/db
@@ -55,14 +67,41 @@ spec:
                   - "sh"
                   - "-c"
                   - |
-                    ( for i in $(seq 1 30); do
-                        if mongo --host localhost --eval "db.adminCommand('ping')" --quiet; then
-                          break;
-                        fi;
-                        sleep 2;
-                      done;
-                      mongo --host localhost --eval "rs.initiate()" || true ) &
-                    exit 0
+                    echo "Running replica set initialization on primary pod ($HOSTNAME)..."
+                    for i in $(seq 1 30); do
+                      if mongo --host localhost --eval "db.adminCommand('ping')" --quiet; then
+                        break
+                      fi
+                      echo "Waiting for mongod to be ready ($i/30)..."
+                      sleep 2
+                    done
+                    echo "Initiating replica set..."
+                    echo "Initiating rs0 with 3 members..."
+                    mongo --host localhost --eval "
+                      rs.initiate({
+                        _id: 'rs0',
+                        members: [
+                          { _id: 0, host: '{{ include \"mongodb-replicaset.fullname\" . }}-0.{{ include \"mongodb-replicaset.fullname\" . }}:27017' },
+                          { _id: 1, host: '{{ include \"mongodb-replicaset.fullname\" . }}-1.{{ include \"mongodb-replicaset.fullname\" . }}:27017' },
+                          { _id: 2, host: '{{ include \"mongodb-replicaset.fullname\" . }}-2.{{ include \"mongodb-replicaset.fullname\" . }}:27017' }
+                        ]
+                      })
+                    " || true
+                    for i in $(seq 1 30); do
+                      isMaster=$(mongo --host localhost --eval "db.isMaster().ismaster" --quiet)
+                      if [ "$isMaster" = "true" ]; then
+                        echo "Primary ready!"
+                        break
+                      fi
+                      echo "Waiting for PRIMARY state ($i/30)..."
+                      sleep 2
+                    done
+                    echo "Creating root user..."
+                    mongo --host localhost admin --eval "db.createUser({
+                      user: '$MONGO_INITDB_ROOT_USERNAME',
+                      pwd: '$MONGO_INITDB_ROOT_PASSWORD',
+                      roles: [ { role: 'root', db: 'admin' } ]
+                    })" || true
       volumes:
         - name: keyfile-secret
           secret:
@@ -83,4 +122,4 @@ spec:
         storageClassName: {{ .Values.persistence.storageClass | quote }}
         resources:
           requests:
-            storage: {{ .Values.persistence.size | quote }}    
+            storage: {{ .Values.persistence.size | quote }}
