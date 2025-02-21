@@ -1,53 +1,86 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ .Values.service.name }}
+  name: {{ include "mongodb-replicaset.fullname" . }}
+  labels:
+    app: mongodb
 spec:
-  serviceName: {{ .Values.service.name }}-headless
+  serviceName: {{ include "mongodb-replicaset.fullname" . }}
   replicas: {{ .Values.replicaCount }}
-  podManagementPolicy: OrderedReady
   selector:
     matchLabels:
-      app: {{ .Values.service.name }}
+      app: mongodb
   template:
     metadata:
       labels:
-        app: {{ .Values.service.name }}
+        app: mongodb
     spec:
-      terminationGracePeriodSeconds: 10
+      initContainers:
+        - name: copy-keyfile
+          image: busybox
+          command:
+            - "sh"
+            - "-c"
+            - |
+              cp /tmp/keyfile/keyfile /etc/mongodb/keyfile && chmod 0400 /etc/mongodb/keyfile
+          volumeMounts:
+            - name: keyfile-secret
+              mountPath: /tmp/keyfile
+            - name: keyfile-copy
+              mountPath: /etc/mongodb
       containers:
-      - name: mongodb
-        image: {{ .Values.image }}
-        command: ["mongod"]
-        args:
-        - "--bind_ip_all"
-        - "--replSet=rs0"
-        - "--auth"
-        - "--keyFile=/etc/mongodb/keyfile"
-        ports:
-        - containerPort: {{ .Values.port }}
-        volumeMounts:
-        - name: datadir
-          mountPath: /data/db
+        - name: mongodb
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["mongod"]
+          args:
+            - "--replSet"
+            - "rs0"
+            - "--bind_ip_all"
+            - "--keyFile"
+            - "/etc/mongodb/keyfile"
+          ports:
+            - containerPort: 27017
+              name: mongo
+          volumeMounts:
+            - name: datadir
+              mountPath: /data/db
+            - name: keyfile-copy
+              mountPath: /etc/mongodb
+              readOnly: true
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  - "sh"
+                  - "-c"
+                  - |
+                    ( for i in $(seq 1 30); do
+                        if mongo --host localhost --eval "db.adminCommand('ping')" --quiet; then
+                          break;
+                        fi;
+                        sleep 2;
+                      done;
+                      mongo --host localhost --eval "rs.initiate()" || true ) &
+                    exit 0
+      volumes:
+        - name: keyfile-secret
+          secret:
+            secretName: {{ .Values.mongoKeyfile.secretName | quote }}
+            defaultMode: 0400
+        - name: keyfile-copy
+          emptyDir: {}
         - name: keyfile
-          mountPath: /etc/mongodb
-          readOnly: true
-        env:
-        - name: MONGO_INITDB_ROOT_USERNAME
-          value: {{ .Values.auth.rootUser }}
-        - name: MONGO_INITDB_ROOT_PASSWORD
-          value: {{ .Values.auth.rootPassword }}
-        readinessProbe:
-          exec:
-            command: ["mongo", "--eval", "db.adminCommand({ ping: 1 })"]
-          initialDelaySeconds: 5
-          periodSeconds: 10
+          secret:
+            secretName: {{ .Values.mongoKeyfile.secretName | quote }}
+            defaultMode: 0400
   volumeClaimTemplates:
-  - metadata:
-      name: datadir
-    spec:
-      accessModes: ["ReadWriteOnce"]
-      storageClassName: {{ .Values.persistence.storageClass }}
-      resources:
-        requests:
-          storage: {{ .Values.persistence.size }}
+    - metadata:
+        name: datadir
+      spec:
+        accessModes:
+          - {{ .Values.persistence.accessMode | quote }}
+        storageClassName: {{ .Values.persistence.storageClass | quote }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size | quote }}    

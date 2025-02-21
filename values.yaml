@@ -1,18 +1,22 @@
 replicaCount: 3
-image: mongo:5.0
-port: 27017
 
-auth:
-  rootUser: root
-  rootPassword: password123
-  keyfile: |-
-    # Generate with: openssl rand -base64 756 | base64 -w 0
-    # Paste output here
+image:
+  repository: mongo
+  tag: "5.0"
+  pullPolicy: IfNotPresent
 
 persistence:
-  storageClass: ocs-storagecluster-cephfs
-  size: 1Gi
+  enabled: true
+  storageClass: "standard"
+  accessMode: ReadWriteOnce
+  size: 2Gi
 
-service:
-  name: mongodb
-  type: ClusterIP
+mongoKeyfile:
+  enabled: true
+  secretName: mongo-keyfile
+  mountPath: /etc/mongodb/keyfile
+
+auth:
+  keyfile: maHzZT6b2IZbo5ukUGp2clqaYyZY99Us3uMpDdi1/XbS0ZmfC0tEGQaPpexnuMEJvhii9SXYL8IFyOpd2ytNsVAntWhZuWUhrDlgDUgZkMd2RRLTb8yaQS0lY/BEqfciAVNcvlCgHQy2vvoc/5pTEAsv2ExVETxEm+kJJUnZ1xuZJMvZ2ZDo2xq8yoXvSwx9UCrBXwoPy3JXxAhvQPoPi+AVmI3MRK+bi44mjnaLWdYNSdPLgetEKW1Y3gceRKB+lGN1mfDI1tV9nGUbNGY0+zlbG2xEUnPcn0A0i62K+HcP1jQjrM9hK6un/c1hr+V8odYxn7ajcCQTY1I/FTelK6CVpEsQu7DmJ5JjqBwXdOkR3IXdWDD56dVnqRy2lwzpTthNGJkPNaQhDlqNGrcQKZyp9QFN6ZzKHv3bLjoOyV0ysx25fQluzJzbPFm+wpYLol4iYb99taw6ZBYSAppD0QhRqSuKzht6BQL/rj9yRMPFL2lX/xi3yS58aDReDtUr157bw2L3SCju5ZZcl5+e4UNOTox4PCzoBdiWnfSpC8k3yas6TgGOkZc7FPDEv7WmaaOHpZHP/ALEjb2jGfT2jMYV6BEOeIjwxytbFOplyygnBFdZZxITDxBZ1XcIixg/vXJKB6mJIS2IXNypiXgYKB7vYFBBQTuaPLHAPYTIXwLvOxVywRm/bBrRllHINPc1OvHKKErIzvSUOgC+javTbF9NaIkTmLrZc87/5Ur1dGJ3Ou5sgtSDoeosK/Bxo/eCscmgWVfE/I1pjeh0wHS04les20OkoCwXFgPliugJuEUW/lgX5dnT+aXPimTpiSLHuLKyCffHN8cJYAVPE80DOfQgmD97jXzHSuvdifsB2rymTlaprfCdQKEPYmdtWrfq+3AWDqbTwuVy3T7LTeP9xjgvuqcOlEX+tI17LvotszIG5SoooxwTLhH9VjLM+bg1kaLBoH2DMfbCC9+Ie+CK8L9ijcb3LYyV9xkwRPZbiq0JgrHD
+
+externalHost: "localhost"

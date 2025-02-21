@@ -1,5 +1,6 @@
 apiVersion: v2
 name: mongodb-replicaset
-description: MongoDB ReplicaSet with Authentication
+description: A Helm chart for a MongoDB replica set
+type: application
 version: 0.1.0
-appVersion: 8.0
+appVersion: "5.0"
