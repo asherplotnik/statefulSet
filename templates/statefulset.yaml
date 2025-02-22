@@ -67,18 +67,15 @@ spec:
                   - "sh"
                   - "-c"
                   - |
-                    mongo --host localhost admin --eval "db.createUser({
-                      user: '$MONGO_INITDB_ROOT_USERNAME',
-                      pwd: '$MONGO_INITDB_ROOT_PASSWORD',
-                      roles: [ { role: 'root', db: 'admin' } ]
-                    })" || true
                     echo "Running replica set initialization on primary pod ($HOSTNAME)..."
                     for i in $(seq 1 30); do
                       if mongo --host localhost --eval "db.adminCommand('ping')" --quiet; then
+                        sleep 5
+                        mongo --host localhost admin --eval "db.createUser({ user: '$MONGO_INITDB_ROOT_USERNAME', pwd: '$MONGO_INITDB_ROOT_PASSWORD', roles: [ { role: 'root', db: 'admin' } ] })"
                         break
                       fi
                       echo "Waiting for mongod to be ready ($i/30)..."
-                      sleep 2
+                      sleep 5
                     done
                     echo "Initiating replica set..."
                     echo "Initiating rs0 with 3 members..."
@@ -91,7 +88,7 @@ spec:
                           { _id: 2, host: 'mongodb-replicaset-2.mongodb-replicaset:27017' }
                         ]
                       })
-                    " || true
+                    "
                     for i in $(seq 1 30); do
                       isMaster=$(mongo --host localhost --eval "db.isMaster().ismaster" --quiet)
                       if [ "$isMaster" = "true" ]; then
