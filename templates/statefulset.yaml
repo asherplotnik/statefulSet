@@ -101,7 +101,6 @@ spec:
                       echo "Waiting for PRIMARY state ($i/30)..."
                       sleep 2
                     done
-                    echo "Creating root user..."
       volumes:
         - name: keyfile-secret
           secret:
