@@ -57,13 +57,19 @@ spec:
                 command:
                   - "sh"
                   - "-c"
-                  - |                 
+                  - |
+                    exec > /proc/1/fd/1 2>/proc/1/fd/2
+                    set -x
+                    sleep 10;                 
                     for i in $(seq 1 30); do
                       if mongo --host localhost --eval "db.adminCommand('ping')" --quiet; then
+                        echo "Mongo is up...";
                         break;
                       fi;
-                      sleep 2;
+                      echo "Waiting for mongod to be ready ($i/30)...";
+                      sleep 5;
                     done;
+                    echo "Running replica set initiation script...";
                     mongo --host localhost /config/init.js || true;
                     exit 0
       volumes:

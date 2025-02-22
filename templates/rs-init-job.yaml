@@ -1,0 +1,36 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mongodb-rs-init
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      serviceAccountName: mongodb-exec
+      containers:
+      - name: rs-init
+        image: bitnami/kubectl:latest
+        command:
+          - "sh"
+          - "-c"
+          - |
+            exec > /proc/1/fd/1 2>/proc/1/fd/2
+            set -x
+            echo "Sleeping 180 seconds to let MongoDB pods be ready..."
+            sleep 180
+            echo "Executing replica set initiation inside the primary pod..."
+            kubectl exec mongodb-replicaset-0 -c mongodb -- mongo admin --eval '
+              rs.initiate({
+                _id: "rs0",
+                members: [
+                  { _id: 0, host: "mongodb-replicaset-0.mongodb-replicaset:27017" },
+                  { _id: 1, host: "mongodb-replicaset-1.mongodb-replicaset:27017" },
+                  { _id: 2, host: "mongodb-replicaset-2.mongodb-replicaset:27017" }
+                ]
+              })
+            '
+            sleep 20
+      restartPolicy: OnFailure
