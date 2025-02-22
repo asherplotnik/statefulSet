@@ -71,7 +71,7 @@ spec:
                     for i in $(seq 1 30); do
                       if mongo --host localhost --eval "db.adminCommand('ping')" --quiet; then
                         sleep 5
-                        mongo --host localhost admin --eval "db.createUser({ user: "admin", pwd: "secret123", roles: [ { role: "root", db: "admin" } ] })"
+                        mongo --host localhost admin --eval "use admin; db.createUser({ user: "admin", pwd: "secret123", roles: [ { role: "root", db: "admin" } ] })"
                         break
                       fi
                       echo "Waiting for mongod to be ready ($i/30)..."
