@@ -19,8 +19,8 @@ spec:
           - |
             exec > /proc/1/fd/1 2>/proc/1/fd/2
             set -x
-            echo "Sleeping 180 seconds to let MongoDB pods be ready..."
-            sleep 180
+            echo "Sleeping 120 seconds to let MongoDB pods be ready..."
+            sleep 120
             echo "Executing replica set initiation inside the primary pod..."
             kubectl exec mongodb-replicaset-0 -c mongodb -- mongo admin --eval '
               rs.initiate({
