@@ -4,11 +4,4 @@ metadata:
   name: mongodb-rs-init
 data:
   init.js: |
-    rs.initiate({
-      _id: "rs0",
-      members: [
-        { _id: 0, host: "mongodb-replicaset-0.mongodb-replicaset:27017" },
-        { _id: 1, host: "mongodb-replicaset-1.mongodb-replicaset:27017" },
-        { _id: 2, host: "mongodb-replicaset-2.mongodb-replicaset:27017" }
-      ]
-    });
+    sleep 5

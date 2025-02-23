@@ -69,7 +69,6 @@ spec:
                       echo "Waiting for mongod to be ready ($i/30)...";
                       sleep 5;
                     done;
-                    echo "Running replica set initiation script...";
                     mongo --host localhost /config/init.js || true;
                     exit 0
       volumes:

@@ -32,5 +32,13 @@ spec:
                 ]
               })
             '
+            echo "Waiting 20 seconds for replica set to stabilize..."
+            sleep 20
+
+            echo "Creating external user..."
+            kubectl exec mongodb-replicaset-0 -c mongodb -- mongo admin --eval 'db.createUser({user:"admin", pwd:"secret123", roles:[{role:"root", db:"admin"}]})'
+            
+            echo "Initialization complete."
+            sleep 10
             sleep 20
       restartPolicy: OnFailure
