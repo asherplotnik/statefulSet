@@ -15,6 +15,11 @@ spec:
       labels:
         app: mongodb
     spec:
+      securityContext:
+        runAsUser: 999
+        fsGroup: 999
+      imagePullSecrets:
+        - name: {{ .Values.mongoKeyfile.secretName }}
       initContainers:
         - name: copy-keyfile
           image: busybox
