@@ -11,7 +11,7 @@ image:
   # This sets the pull policy for images.
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "0.0.3"
+  tag: "0.0.4"
 
 mongo:
   uri: mongodb://admin:secret123@mongodb-replicaset-0.mongodb-replicaset,mongodb-replicaset-1.mongodb-replicaset,mongodb-replicaset-2.mongodb-replicaset:27017/mydb?replicaSet=rs0&authSource=admin

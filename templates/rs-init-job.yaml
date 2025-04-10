@@ -35,9 +35,35 @@ spec:
             echo "Waiting 20 seconds for replica set to stabilize..."
             sleep 20
 
+            for i in $(seq 1 10); do
+              for pod in mongodb-replicaset-0 mongodb-replicaset-1 mongodb-replicaset-2; do
+                echo "Checking pod: ${pod}"
+                isPrimary=$(kubectl exec ${pod} -c mongodb -- mongo admin --quiet --eval "rs.isMaster().ismaster" 2>/dev/null)
+                echo "Result from ${pod}: ${isPrimary}"
+                if [ "${isPrimary}" = "true" ]; then
+                  PRIMARY=${pod}
+                  break 2
+                fi
+              done
+              echo "No primary found, sleeping for 10 seconds before retrying..."
+              sleep 10
+            done
+
             echo "Creating external user..."
-            kubectl exec mongodb-replicaset-0 -c mongodb -- mongo admin --eval 'db.createUser({user:"admin", pwd:"secret123", roles:[{role:"root", db:"admin"}]})'
-            
+            kubectl exec ${PRIMARY} -c mongodb -- mongo admin --eval '
+              db.createUser({
+                  user: "admin",
+                  pwd: "secret123",
+                  roles: [{ role: "root", db: "admin" }]
+                });
+                db = db.getSiblingDB("myDb");
+                db.createUser({
+                  user: "app",
+                  pwd: "apppass123",
+                  roles: [{ role: "readWrite", db: "myDb" }]
+                });
+              '
+
             echo "Initialization complete."
             sleep 10
             sleep 20
